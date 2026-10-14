@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>DJ Q Soundboard</title>
+  <meta name="description" content="A drop-in soundboard for DJ sets. Add your own sounds and fire them from the keyboard or touchscreen.">
+  <meta name="theme-color" content="#0b0b12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="brand">DJ&nbsp;Q <span>Soundboard</span></h1>
+    <div class="controls">
+      <label class="master" title="Master volume">
+        <span>Master</span>
+        <input id="master" type="range" min="0" max="1" step="0.01" value="1" aria-label="Master volume">
+      </label>
+      <button id="stopAll" class="btn danger" title="Stop all sounds (Space or Esc)">&#9632; Stop all</button>
+      <button id="addBtn" class="btn primary" title="Add sounds from this device">+ Add sounds</button>
+      <button id="editToggle" class="btn" aria-pressed="false" title="Rename, recolor, reorder or delete pads">Edit</button>
+      <button id="menuBtn" class="btn icon" title="More" aria-label="More options">&#8943;</button>
+    </div>
+  </header>
+
+  <div id="editBanner" class="banner" hidden>Edit mode: tap a pad to change it. Tap <b>Done</b> when finished.</div>
+
+  <main>
+    <div id="grid" class="grid" aria-live="polite"></div>
+    <div id="empty" class="empty" hidden>
+      <p>No sounds yet.</p>
+      <p>Drag audio files here or tap <b>+ Add sounds</b>.</p>
+    </div>
+  </main>
+
+  <footer class="hint">
+    Keys <kbd>1</kbd>&ndash;<kbd>0</kbd>, <kbd>Q</kbd>&ndash;<kbd>M</kbd> fire pads &middot; <kbd>Space</kbd> stops everything &middot; drop audio files anywhere to add them
+  </footer>
+
+  <input type="file" id="fileInput" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.flac,.webm" multiple hidden>
+  <input type="file" id="restoreInput" accept="application/json,.json" hidden>
+
+  <div id="dropOverlay" class="drop-overlay" hidden><div>Drop to add sounds</div></div>
+
+  <dialog id="editDialog" class="sheet">
+    <form method="dialog" id="editForm">
+      <h2>Edit pad</h2>
+      <label class="field">
+        <span>Name</span>
+        <input id="fName" type="text" maxlength="40" autocomplete="off">
+      </label>
+      <div class="field">
+        <span>Color</span>
+        <div id="fColors" class="swatches"></div>
+      </div>
+      <label class="field">
+        <span>Volume <output id="fVolOut"></output></span>
+        <input id="fVol" type="range" min="0" max="1.5" step="0.01">
+      </label>
+      <label class="field">
+        <span>When tapped while playing</span>
+        <select id="fMode">
+          <option value="restart">Restart from the top</option>
+          <option value="toggle">Stop it</option>
+        </select>
+      </label>
+      <label class="check">
+        <input id="fLoop" type="checkbox"> Loop
+      </label>
+      <div class="row">
+        <button type="button" id="fPreview" class="btn">&#9654; Preview</button>
+        <button type="button" id="fLeft" class="btn" title="Move earlier">&#9664; Move</button>
+        <button type="button" id="fRight" class="btn" title="Move later">Move &#9654;</button>
+      </div>
+      <div class="row end">
+        <button type="button" id="fDelete" class="btn danger">Delete</button>
+        <button value="done" class="btn primary">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="menuDialog" class="sheet">
+    <form method="dialog">
+      <h2>More</h2>
+      <div class="stack">
+        <button type="button" id="backupBtn" class="btn">Download backup of my sounds</button>
+        <button type="button" id="restoreBtn" class="btn">Restore from a backup file</button>
+        <button type="button" id="unhideBtn" class="btn">Bring back hidden built-in sounds</button>
+      </div>
+      <details>
+        <summary>How do sounds get saved?</summary>
+        <p>Sounds you add with <b>+ Add sounds</b> are saved in this browser on this device, so they're still here next time (even offline). They don't sync to other devices &mdash; use <b>Download backup</b> and <b>Restore</b> to move them.</p>
+        <p>To make a sound permanent for everyone who opens the site, upload the file into the <code>sounds/</code> folder of the GitHub repo. It shows up automatically after the site redeploys.</p>
+      </details>
+      <div class="row end">
+        <button value="close" class="btn primary">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
