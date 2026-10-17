@@ -84,6 +84,9 @@ const ctx = new AudioCtx({ latencyHint: 'interactive' });
 const master = ctx.createGain();
 master.connect(ctx.destination);
 
+// iOS: let sounds play even when the ringer/silent switch is on (Safari 17+).
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* unsupported */ }
+
 const buffers = new Map(); // pad id -> Promise<AudioBuffer>
 const playing = new Map(); // pad id -> { src, gain, start, dur, loop }
 
@@ -132,8 +135,9 @@ async function trigger(pad) {
   try {
     buf = await loadBuffer(pad);
   } catch (err) {
-    console.error(err);
-    toast(`Couldn't play "${pad.name}"`);
+    // Web Audio couldn't decode it; let the browser's own player have a go.
+    console.warn(`Web Audio couldn't decode "${pad.name}", using fallback player`, err);
+    playWithElement(pad);
     return;
   }
 
@@ -157,17 +161,49 @@ async function trigger(pad) {
   tick();
 }
 
+// Fallback for files Web Audio can't decode: a plain <audio> element.
+function playWithElement(pad) {
+  if (!pad.builtin && !pad.blobUrl) pad.blobUrl = URL.createObjectURL(new Blob([pad.data], { type: pad.type }));
+  const el = new Audio(pad.builtin ? pad.url : pad.blobUrl);
+  el.loop = pad.loop;
+  el.volume = Math.min(1, pad.volume * master.gain.value);
+  const entry = { el, start: ctx.currentTime, dur: Infinity, loop: pad.loop };
+  const done = () => {
+    if (playing.get(pad.id) === entry) {
+      playing.delete(pad.id);
+      setPlayingClass(pad.id, false);
+    }
+  };
+  el.addEventListener('loadedmetadata', () => { entry.dur = el.duration; });
+  el.addEventListener('ended', done);
+  el.addEventListener('error', () => {
+    done();
+    toast(`Couldn't play "${pad.name}" — try re-saving it as MP3`);
+  });
+  playing.set(pad.id, entry);
+  setPlayingClass(pad.id, true);
+  el.play().then(tick).catch((err) => {
+    if (err.name === 'AbortError') return; // stopped before it started
+    console.error(err);
+    el.dispatchEvent(new Event('error'));
+  });
+}
+
 function stopPad(id, fade = 0.04) {
   const entry = playing.get(id);
   if (!entry) return;
   playing.delete(id);
+  setPlayingClass(id, false);
+  if (entry.el) {
+    entry.el.pause();
+    return;
+  }
   const t = ctx.currentTime;
   const g = entry.gain.gain;
   g.cancelScheduledValues(t);
   g.setValueAtTime(g.value, t);
   g.linearRampToValueAtTime(0, t + fade);
   try { entry.src.stop(t + fade + 0.005); } catch { /* already stopped */ }
-  setPlayingClass(id, false);
 }
 
 function stopAll() {
@@ -183,7 +219,7 @@ function tick() {
     for (const [id, e] of playing) {
       const el = padEl(id);
       if (!el) continue;
-      const t = ctx.currentTime - e.start;
+      const t = e.el ? e.el.currentTime : ctx.currentTime - e.start;
       const p = e.loop ? (t % e.dur) / e.dur : Math.min(1, t / e.dur);
       el.style.setProperty('--p', p.toFixed(4));
     }
@@ -321,8 +357,8 @@ function preloadAll() {
       const meta = padEl(pad.id)?.querySelector('.meta');
       if (meta) meta.textContent = fmtTime(pad.duration);
     }).catch((err) => {
-      console.error(`Failed to load ${pad.name}`, err);
-      padEl(pad.id)?.classList.add('error');
+      // Not fatal: trigger() falls back to an <audio> element for this pad.
+      console.warn(`Web Audio couldn't preload ${pad.name}`, err);
     });
   }
 }
@@ -558,8 +594,14 @@ function updateCurrent(changes, rerenderSwatches = false) {
   Object.assign(current, changes);
   const entry = playing.get(current.id);
   if (entry) {
-    if ('volume' in changes) entry.gain.gain.setTargetAtTime(current.volume, ctx.currentTime, 0.01);
-    if ('loop' in changes) { entry.src.loop = current.loop; entry.loop = current.loop; }
+    if ('volume' in changes) {
+      if (entry.el) entry.el.volume = Math.min(1, current.volume * master.gain.value);
+      else entry.gain.gain.setTargetAtTime(current.volume, ctx.currentTime, 0.01);
+    }
+    if ('loop' in changes) {
+      (entry.el || entry.src).loop = current.loop;
+      entry.loop = current.loop;
+    }
   }
   render();
   if (rerenderSwatches) renderSwatches();
