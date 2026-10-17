@@ -8,5 +8,25 @@
     "file": "lets-get-singin.mp3",
     "name": "Let's Get Singin'",
     "color": "#00d1ff"
+  },
+  {
+    "file": "air-horn.mp3",
+    "name": "Air Horn",
+    "color": "#ffd400"
+  },
+  {
+    "file": "another-one.mp3",
+    "name": "Another One",
+    "color": "#3ddc84"
+  },
+  {
+    "file": "auughhh.mp3",
+    "name": "AUUGHHH",
+    "color": "#b44dff"
+  },
+  {
+    "file": "bruh.mp3",
+    "name": "Bruh",
+    "color": "#ff8a00"
   }
 ]

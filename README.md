@@ -9,7 +9,8 @@ A soundboard for live DJ sets, hosted free on GitHub Pages. You can fire pads fr
 | Play a sound | Click/tap a pad, or press its key (`1`–`0`, then `Q`–`M`) |
 | Stop everything | `Space`, `Esc`, or **■ Stop all** |
 | Add sounds | **+ Add sounds**, or drag audio files onto the page |
-| Rename / recolor / reorder / loop / delete | **Edit**, then tap a pad |
+| Rename a pad | Tap the ✎ on the pad, type a new name, press Enter |
+| Recolor / reorder / loop / delete | **Edit**, then tap a pad |
 | Master volume | Slider in the top bar |
 
 Pads trigger on press, not release, and several can play at once. Each pad can be set to **restart** or **stop** when you hit it again while it's playing, and it can loop.

@@ -282,7 +282,19 @@ function render() {
       <span class="bar"></span>`;
     el.querySelector('.name').textContent = pad.name;
     el.setAttribute('aria-label', `${pad.name}${key ? `, key ${key}` : ''}`);
-    return el;
+
+    const rename = document.createElement('button');
+    rename.type = 'button';
+    rename.className = 'pad-rename';
+    rename.dataset.renameId = pad.id;
+    rename.title = `Rename "${pad.name}"`;
+    rename.setAttribute('aria-label', `Rename ${pad.name}`);
+    rename.innerHTML = '&#9998;';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'pad-wrap';
+    wrap.append(el, rename);
+    return wrap;
   }));
   $('#empty').hidden = vis.length > 0;
 }
@@ -418,6 +430,12 @@ grid.addEventListener('pointerdown', (e) => {
 });
 
 grid.addEventListener('click', (e) => {
+  const renameBtn = e.target.closest('.pad-rename');
+  if (renameBtn) {
+    const pad = findPad(renameBtn.dataset.renameId);
+    if (pad) openEditor(pad, { rename: true });
+    return;
+  }
   const el = e.target.closest('.pad');
   if (!el) return;
   const pad = findPad(el.dataset.id);
@@ -499,7 +517,7 @@ const f = {
 };
 let current = null;
 
-function openEditor(pad) {
+function openEditor(pad, { rename = false } = {}) {
   current = pad;
   f.name.value = pad.name;
   f.vol.value = pad.volume;
@@ -509,6 +527,10 @@ function openEditor(pad) {
   $('#fDelete').textContent = pad.builtin ? 'Hide' : 'Delete';
   renderSwatches();
   dlg.showModal();
+  if (rename) {
+    f.name.focus();
+    f.name.select();
+  }
 }
 
 function renderSwatches() {
